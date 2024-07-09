@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace ToDoList.Models
@@ -13,7 +12,7 @@ namespace ToDoList.Models
         public bool IsComplete { get; set; }
         [ForeignKey("CategoryId")]
         public long CategoryId { get; set; }
-        public virtual ItemCategory Category { get; set; }
+        public virtual ItemCategory? Category { get; set; }
         //[ForeignKey("User")]
         //public string UserId { get; set; }
         //public virtual IdentityUser User { get; set; }

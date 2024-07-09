@@ -9,6 +9,9 @@ namespace ToDoList.Models
         public long Id { get; set; }
         [Required]
         public string Title { get; set; }
+        [ForeignKey("UserId")]
+        public string UserId { get; set; }
+        public virtual User User { get; set; }
         public virtual ICollection<ToDoItem>? Items { get; set; }
     }
 }
