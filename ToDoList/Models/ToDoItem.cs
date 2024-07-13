@@ -13,8 +13,5 @@ namespace ToDoList.Models
         [ForeignKey("CategoryId")]
         public long CategoryId { get; set; }
         public virtual ItemCategory? Category { get; set; }
-        //[ForeignKey("User")]
-        //public string UserId { get; set; }
-        //public virtual IdentityUser User { get; set; }
     }
 }

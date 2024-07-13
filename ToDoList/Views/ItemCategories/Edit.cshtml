@@ -1,4 +1,5 @@
-﻿@model ToDoList.Models.ItemCategory
+﻿@using System.Security.Claims
+@model ToDoList.Models.ItemCategory
 
 @{
     ViewData["Title"] = "Edit";
@@ -14,6 +15,7 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
             <div class="form-group">
+                <input asp-for="UserId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" type="hidden" />
                 <label asp-for="Title" class="control-label"></label>
                 <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>

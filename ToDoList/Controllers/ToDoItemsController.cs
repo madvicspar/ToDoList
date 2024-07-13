@@ -1,26 +1,37 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using ToDoList.Models;
 
 namespace ToDoList.Controllers
 {
     public class ToDoItemsController : Controller
     {
-        private readonly ApplicationDbContext _context;
-
-        public ToDoItemsController(ApplicationDbContext context)
-        {
-            _context = context;
-        }
-
+        /// <summary>
+        /// Displays a page with a list of all to do items
+        /// </summary>
+        /// <returns></returns>
         // GET: ToDoItems
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.ToDoItems.Include(t => t.Category);
-            return View(await applicationDbContext.ToListAsync());
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                return dataBase == null ? View() : View(await dataBase.ToDoItems
+                    .Include(t => t.Category)
+                    .Where(x => x.Category.UserId == currentUserId)
+                    .ToListAsync());
+            }
         }
 
+        /// <summary>
+        ///  Displays the details of a specific to do item
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // GET: ToDoItems/Details/5
         public async Task<IActionResult> Details(long? id)
         {
@@ -29,24 +40,38 @@ namespace ToDoList.Controllers
                 return NotFound();
             }
 
-            var toDoItem = await _context.ToDoItems
-                .Include(t => t.Category)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (toDoItem == null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                return NotFound();
-            }
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                if (dataBase == null)
+                {
+                    return NotFound();
+                }
 
-            return View(toDoItem);
+                var toDoItem = await dataBase.ToDoItems
+                    .Include(t => t.Category)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+                return toDoItem == null ? NotFound() : View(toDoItem);
+            }
         }
 
+        /// <summary>
+        /// Displays a confirmation page for creating a to do item
+        /// </summary>
+        /// <returns></returns>
         // GET: ToDoItems/Create
         public IActionResult Create()
         {
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title");
+            var dataBase = ServiceActivator.GetScope().ServiceProvider.GetService<ApplicationDbContext>();
+            ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title");
             return View();
         }
 
+        /// <summary>
+        /// Creates a new to do item in the database
+        /// </summary>
+        /// <param name="toDoItem"></param>
+        /// <returns></returns>
         // POST: ToDoItems/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -54,16 +79,31 @@ namespace ToDoList.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,IsComplete,CategoryId")] ToDoItem toDoItem)
         {
-            if (ModelState.IsValid)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.Add(toDoItem);
-                await _context.SaveChangesAsync();
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                if (dataBase == null)
+                {
+                    return View(toDoItem);
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title", toDoItem.CategoryId);
+                    return View(toDoItem);
+                }
+
+                dataBase.Add(toDoItem);
+                await dataBase.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title", toDoItem.CategoryId);
-            return View(toDoItem);
         }
 
+        /// <summary>
+        /// Displays a confirmation page for editing a to do item
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // GET: ToDoItems/Edit/5
         public async Task<IActionResult> Edit(long? id)
         {
@@ -72,15 +112,27 @@ namespace ToDoList.Controllers
                 return NotFound();
             }
 
-            var toDoItem = await _context.ToDoItems.FindAsync(id);
+            var dataBase = ServiceActivator.GetScope().ServiceProvider.GetService<ApplicationDbContext>();
+            if (dataBase == null)
+            {
+                return NotFound();
+            }
+
+            var toDoItem = await dataBase.ToDoItems.FindAsync(id);
             if (toDoItem == null)
             {
                 return NotFound();
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title", toDoItem.CategoryId);
+            ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title", toDoItem.CategoryId);
             return View(toDoItem);
         }
 
+        /// <summary>
+        /// Edits an existing to do item in the database
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toDoItem"></param>
+        /// <returns></returns>
         // POST: ToDoItems/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -92,31 +144,29 @@ namespace ToDoList.Controllers
             {
                 return NotFound();
             }
-
-            if (ModelState.IsValid)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                try
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                if (dataBase != null)
                 {
-                    _context.Update(toDoItem);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ToDoItemExists(toDoItem.Id))
+                    if (!ModelState.IsValid)
                     {
-                        return NotFound();
+                        ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title", toDoItem.CategoryId);
+                        return View(toDoItem);
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    dataBase.Update(toDoItem);
+                    await dataBase.SaveChangesAsync();
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Title", toDoItem.CategoryId);
-            return View(toDoItem);
         }
 
+        /// <summary>
+        /// Displays a confirmation page for deleting a to do item
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // GET: ToDoItems/Delete/5
         public async Task<IActionResult> Delete(long? id)
         {
@@ -125,35 +175,59 @@ namespace ToDoList.Controllers
                 return NotFound();
             }
 
-            var toDoItem = await _context.ToDoItems
-                .Include(t => t.Category)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (toDoItem == null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                return NotFound();
-            }
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                if (dataBase == null)
+                {
+                    return NotFound();
+                }
 
-            return View(toDoItem);
+                var toDoItem = await dataBase.ToDoItems
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                return toDoItem == null ? NotFound() : View(toDoItem);
+            }
         }
 
+        /// <summary>
+        /// Deletes an to do item from the database
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // POST: ToDoItems/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(long id)
         {
-            var toDoItem = await _context.ToDoItems.FindAsync(id);
-            if (toDoItem != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.ToDoItems.Remove(toDoItem);
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                if (dataBase != null)
+                {
+                    var toDoItem = await dataBase.ToDoItems.FindAsync(id);
+                    if (toDoItem != null)
+                    {
+                        dataBase.ToDoItems.Remove(toDoItem);
+                        await dataBase.SaveChangesAsync();
+                    }
+                }
+                return RedirectToAction(nameof(Index));
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// Checks if an to do item exists in the database
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         private bool ToDoItemExists(long id)
         {
-            return _context.ToDoItems.Any(e => e.Id == id);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+                return dataBase?.ToDoItems.Any(e => e.Id == id) ?? false;
+            }
         }
     }
 }
