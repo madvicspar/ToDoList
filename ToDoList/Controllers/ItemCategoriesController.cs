@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ToDoList.Models;
 
 namespace ToDoList.Controllers
 {
+    [Authorize]
     public class ItemCategoriesController : Controller
     {
         /// <summary>
