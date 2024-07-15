@@ -2,12 +2,12 @@
 @model ToDoList.Models.ItemCategory
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Добавление";
 }
 
-<h1>Create</h1>
+<h1>Добавление</h1>
 
-<h4>ItemCategory</h4>
+<h4>Категория</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
@@ -20,14 +20,14 @@
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Добавить" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Index">Вернуться к списку категорий</a>
 </div>
 
 @section Scripts {

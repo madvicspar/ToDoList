@@ -8,6 +8,7 @@ namespace ToDoList.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long Id { get; set; }
         [Required]
+        [Display(Name = "Название")]
         public string Title { get; set; }
         [ForeignKey("UserId")]
         public string UserId { get; set; }
