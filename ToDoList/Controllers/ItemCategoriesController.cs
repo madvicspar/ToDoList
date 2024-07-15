@@ -21,9 +21,10 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                return dataBase == null ? View() : View(await dataBase.Categories
-                    .Where(x => x.UserId == currentUserId)
-                    .ToListAsync());
+                return dataBase == null ? View()
+                    : View(await dataBase.Categories
+                        .Where(x => x.UserId == currentUserId)
+                        .ToListAsync());
             }
         }
 
@@ -45,7 +46,7 @@ namespace ToDoList.Controllers
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
                 if (dataBase == null)
                 {
-                    return NotFound();
+                    return StatusCode(500, "Database access failed.");
                 }
 
                 var itemCategory = await dataBase.Categories.FirstOrDefaultAsync(m => m.Id == id);
@@ -69,8 +70,6 @@ namespace ToDoList.Controllers
         /// <param name="itemCategory"></param>
         /// <returns></returns>
         // POST: ItemCategories/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,UserId")] ItemCategory itemCategory)
@@ -85,7 +84,7 @@ namespace ToDoList.Controllers
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
                 if (dataBase == null)
                 {
-                    return BadRequest("Database not found");
+                    return StatusCode(500, "Database access failed.");
                 }
 
                 dataBase.Add(itemCategory);
@@ -113,7 +112,7 @@ namespace ToDoList.Controllers
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
                 if (dataBase == null)
                 {
-                    return NotFound();
+                    return StatusCode(500, "Database access failed.");
                 }
 
                 var itemCategory = await dataBase.Categories.FindAsync(id);
@@ -128,8 +127,6 @@ namespace ToDoList.Controllers
         /// <param name="itemCategory">The updated item category object with modified properties</param>
         /// <returns></returns>
         // POST: ItemCategories/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(long id, [Bind("Id,Title,UserId")] ItemCategory itemCategory)
@@ -144,11 +141,13 @@ namespace ToDoList.Controllers
                 using (var serviceScope = ServiceActivator.GetScope())
                 {
                     var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                    if (dataBase != null)
+                    if (dataBase == null)
                     {
-                        dataBase.Update(itemCategory);
-                        await dataBase.SaveChangesAsync();
+                        return StatusCode(500, "Database access failed.");
                     }
+
+                    dataBase.Update(itemCategory);
+                    await dataBase.SaveChangesAsync();
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -171,13 +170,14 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                if (dataBase != null)
+                if (dataBase == null)
                 {
-                    var itemCategory = await dataBase.Categories.FirstOrDefaultAsync(m => m.Id == id);
-                    return itemCategory == null ? NotFound() : View(itemCategory);
+                    return StatusCode(500, "Database access failed.");
                 }
+
+                var itemCategory = await dataBase.Categories.FirstOrDefaultAsync(m => m.Id == id);
+                return itemCategory == null ? NotFound() : View(itemCategory);
             }
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -193,14 +193,16 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                if (dataBase != null)
+                if (dataBase == null)
                 {
-                    var itemCategory = await dataBase.Categories.FindAsync(id);
-                    if (itemCategory != null)
-                    {
-                        dataBase.Categories.Remove(itemCategory);
-                        await dataBase.SaveChangesAsync();
-                    }
+                    return StatusCode(500, "Database access failed.");
+                }
+
+                var itemCategory = await dataBase.Categories.FindAsync(id);
+                if (itemCategory != null)
+                {
+                    dataBase.Categories.Remove(itemCategory);
+                    await dataBase.SaveChangesAsync();
                 }
                 return RedirectToAction(nameof(Index));
             }

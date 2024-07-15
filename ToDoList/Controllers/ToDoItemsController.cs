@@ -22,10 +22,11 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                return dataBase == null ? View() : View(await dataBase.ToDoItems
-                    .Include(t => t.Category)
-                    .Where(x => x.Category.UserId == currentUserId)
-                    .ToListAsync());
+                return dataBase == null ? View()
+                    : View(await dataBase.ToDoItems
+                        .Include(t => t.Category)
+                        .Where(x => x.Category.UserId == currentUserId)
+                        .ToListAsync());
             }
         }
 
@@ -47,7 +48,7 @@ namespace ToDoList.Controllers
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
                 if (dataBase == null)
                 {
-                    return NotFound();
+                    return StatusCode(500, "Database access failed.");
                 }
 
                 var toDoItem = await dataBase.ToDoItems
@@ -65,6 +66,11 @@ namespace ToDoList.Controllers
         public IActionResult Create()
         {
             var dataBase = ServiceActivator.GetScope().ServiceProvider.GetService<ApplicationDbContext>();
+            if (dataBase == null)
+            {
+                return StatusCode(500, "Database access failed.");
+            }
+
             ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title");
             return View();
         }
@@ -117,7 +123,7 @@ namespace ToDoList.Controllers
             var dataBase = ServiceActivator.GetScope().ServiceProvider.GetService<ApplicationDbContext>();
             if (dataBase == null)
             {
-                return NotFound();
+                return StatusCode(500, "Database access failed.");
             }
 
             var toDoItem = await dataBase.ToDoItems.FindAsync(id);
@@ -149,17 +155,20 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                if (dataBase != null)
+                if (dataBase == null)
                 {
-                    if (!ModelState.IsValid)
-                    {
-                        ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title", toDoItem.CategoryId);
-                        return View(toDoItem);
-                    }
-
-                    dataBase.Update(toDoItem);
-                    await dataBase.SaveChangesAsync();
+                    return StatusCode(500, "Database access failed.");
                 }
+
+                if (!ModelState.IsValid)
+                {
+                    ViewData["CategoryId"] = new SelectList(dataBase.Categories, "Id", "Title", toDoItem.CategoryId);
+                    return View(toDoItem);
+                }
+
+                dataBase.Update(toDoItem);
+                await dataBase.SaveChangesAsync();
+                
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -182,7 +191,7 @@ namespace ToDoList.Controllers
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
                 if (dataBase == null)
                 {
-                    return NotFound();
+                    return StatusCode(500, "Database access failed.");
                 }
 
                 var toDoItem = await dataBase.ToDoItems
@@ -205,15 +214,18 @@ namespace ToDoList.Controllers
             using (var serviceScope = ServiceActivator.GetScope())
             {
                 var dataBase = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
-                if (dataBase != null)
+                if (dataBase == null)
                 {
-                    var toDoItem = await dataBase.ToDoItems.FindAsync(id);
-                    if (toDoItem != null)
-                    {
-                        dataBase.ToDoItems.Remove(toDoItem);
-                        await dataBase.SaveChangesAsync();
-                    }
+                    return StatusCode(500, "Database access failed.");
                 }
+
+                var toDoItem = await dataBase.ToDoItems.FindAsync(id);
+                if (toDoItem != null)
+                {
+                    dataBase.ToDoItems.Remove(toDoItem);
+                    await dataBase.SaveChangesAsync();
+                }
+                
                 return RedirectToAction(nameof(Index));
             }
         }
