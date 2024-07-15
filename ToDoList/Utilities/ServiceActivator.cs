@@ -1,4 +1,4 @@
-﻿namespace ToDoList
+﻿namespace ToDoList.Utilities
 {
     public class ServiceActivator
     {

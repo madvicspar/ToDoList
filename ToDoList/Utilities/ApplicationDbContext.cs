@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ToDoList.Models;
 
-namespace ToDoList
+namespace ToDoList.Utilities
 {
     public class ApplicationDbContext : IdentityDbContext<User>
     {
